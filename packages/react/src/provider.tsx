@@ -1,16 +1,15 @@
-"use client";
-
-import { createContext, useEffect, useMemo, useRef } from "react";
-import type { HapticPattern } from "./types";
-import { PRESETS } from "./presets";
-import { isIOS, schedulePattern } from "./engine";
+import { createContext, useMemo, useRef, useEffect } from "react";
+import {
+	PRESETS,
+	isIOS,
+	schedulePattern,
+} from "@haptics/core";
+import type { HapticPattern } from "@haptics/core";
 
 export interface HapticsContextValue {
 	patterns: Record<string, HapticPattern>;
 	respectReducedMotion: boolean;
 }
-
-export const HapticsContext = createContext<HapticsContextValue | null>(null);
 
 export interface HapticsProviderProps {
 	children: React.ReactNode;
@@ -19,6 +18,8 @@ export interface HapticsProviderProps {
 	/** Skip haptics when prefers-reduced-motion is active. Default: true */
 	respectReducedMotion?: boolean;
 }
+
+export const HapticsContext = createContext<HapticsContextValue | null>(null);
 
 /**
  * Captures native click events before React's delegation layer to preserve
@@ -36,7 +37,7 @@ export function HapticsProvider({
 	patterns: customPatterns,
 	respectReducedMotion = true,
 }: HapticsProviderProps) {
-	const allPatterns = useMemo<Record<string, HapticPattern>>(
+	const allPatterns = useMemo(
 		() => ({ ...PRESETS, ...customPatterns }),
 		[customPatterns],
 	);
@@ -48,7 +49,7 @@ export function HapticsProvider({
 	reducedMotionRef.current = respectReducedMotion;
 
 	useEffect(() => {
-		if (!isIOS) return;
+		if (!isIOS()) return;
 
 		const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
 		let prefersReducedMotion = mql.matches;
@@ -60,24 +61,25 @@ export function HapticsProvider({
 
 		const handler = (e: MouseEvent) => {
 			if (reducedMotionRef.current && prefersReducedMotion) return;
-
-			const target = (e.target as Element | null)?.closest("[data-haptic]");
+			const target = (e.target as Element)?.closest("[data-haptic]");
 			if (!target) return;
-
 			const action = target.getAttribute("data-haptic");
 			if (action && action in patternsRef.current) {
-				schedulePattern(patternsRef.current[action]);
+				schedulePattern(
+					patternsRef.current[action as keyof typeof patternsRef.current],
+				);
 			}
 		};
 
 		document.addEventListener("click", handler, { capture: true, passive: true });
+
 		return () => {
 			document.removeEventListener("click", handler, { capture: true });
 			mql.removeEventListener("change", onMqlChange);
 		};
 	}, []);
 
-	const ctx = useMemo<HapticsContextValue>(
+	const ctx = useMemo(
 		() => ({ patterns: allPatterns, respectReducedMotion }),
 		[allPatterns, respectReducedMotion],
 	);

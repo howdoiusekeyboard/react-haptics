@@ -1,16 +1,37 @@
 import type { HapticPattern } from "./types";
 
 /** True on iOS where navigator.vibrate is absent but touch hardware exists */
-export const isIOS =
-	typeof window !== "undefined" &&
-	typeof navigator !== "undefined" &&
-	typeof navigator.vibrate !== "function" &&
-	((/iPad|iPhone|iPod/.test(navigator.userAgent) && !("MSStream" in window)) ||
-		(navigator.maxTouchPoints > 1 && /MacIntel/.test(navigator.platform)));
+let _isIOS: boolean | null = null;
+export function isIOS(): boolean {
+	if (_isIOS === null) {
+		_isIOS =
+			typeof window !== "undefined" &&
+			typeof navigator !== "undefined" &&
+			typeof navigator.vibrate !== "function" &&
+			((/iPad|iPhone|iPod/.test(navigator.userAgent) &&
+				!("MSStream" in window)) ||
+				(navigator.maxTouchPoints > 1 &&
+					/MacIntel/.test(navigator.platform)));
+	}
+	return _isIOS;
+}
 
 /** True when the Web Vibration API is available (Android/Chrome) */
-export const isVibrationSupported =
-	typeof navigator !== "undefined" && typeof navigator.vibrate === "function";
+let _isVibrationSupported: boolean | null = null;
+export function isVibrationSupported(): boolean {
+	if (_isVibrationSupported === null) {
+		_isVibrationSupported =
+			typeof navigator !== "undefined" &&
+			typeof navigator.vibrate === "function";
+	}
+	return _isVibrationSupported;
+}
+
+/** @internal Reset cached detection. For testing only. */
+export function resetDetection(): void {
+	_isIOS = null;
+	_isVibrationSupported = null;
+}
 
 /**
  * Single haptic tick on iOS via the checkbox-switch side effect.
@@ -67,13 +88,10 @@ export function toVibrateSequence(pattern: HapticPattern): number[] {
 		const delay = v.delay ?? 0;
 		if (delay > 0) {
 			if (seq.length === 0) {
-				// Leading delay: vibrate API starts with vibration, so prepend a 0ms vibrate
 				seq.push(0);
 			}
 			seq.push(delay);
 		} else if (seq.length > 0) {
-			// No delay between segments: insert 0ms pause so the API doesn't
-			// misinterpret the next vibration duration as a pause
 			seq.push(0);
 		}
 		seq.push(v.duration);

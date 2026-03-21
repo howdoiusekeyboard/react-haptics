@@ -1,0 +1,61 @@
+{
+	"name": "react-haptics",
+	"version": "1.1.0",
+	"description": "Haptic feedback for React. Convenience package re-exporting @haptics/react and @haptics/core.",
+	"type": "module",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.js"
+			},
+			"require": {
+				"types": "./dist/index.d.cts",
+				"default": "./dist/index.cjs"
+			}
+		}
+	},
+	"files": ["dist"],
+	"sideEffects": false,
+	"scripts": {
+		"build": "tsup",
+		"dev": "tsup --watch",
+		"type-check": "tsc --noEmit"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/howdoiusekeyboard/haptics.git",
+		"directory": "packages/react-haptics"
+	},
+	"author": "Howdoiusekeyboard",
+	"license": "MIT",
+	"keywords": [
+		"haptics",
+		"react",
+		"haptic-feedback",
+		"vibration",
+		"ios",
+		"android"
+	],
+	"dependencies": {
+		"@haptics/core": "workspace:*",
+		"@haptics/react": "workspace:*"
+	},
+	"peerDependencies": {
+		"react": ">=18",
+		"react-dom": ">=18"
+	},
+	"devDependencies": {
+		"@types/react": "^19.0.0",
+		"@types/react-dom": "^19.0.0",
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0",
+		"tsup": "^8.0.0"
+	}
+}

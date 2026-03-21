@@ -1,0 +1,58 @@
+{
+	"name": "@haptics/vanilla",
+	"version": "1.0.0",
+	"description": "Zero-framework haptic feedback controller. Event delegation, imperative API, works with any stack.",
+	"type": "module",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.js"
+			},
+			"require": {
+				"types": "./dist/index.d.cts",
+				"default": "./dist/index.cjs"
+			}
+		}
+	},
+	"files": ["dist"],
+	"sideEffects": false,
+	"scripts": {
+		"build": "tsup",
+		"dev": "tsup --watch",
+		"type-check": "tsc --noEmit",
+		"test": "vitest run"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/howdoiusekeyboard/haptics.git",
+		"directory": "packages/vanilla"
+	},
+	"author": "Howdoiusekeyboard",
+	"license": "MIT",
+	"keywords": [
+		"haptics",
+		"vanilla",
+		"haptic-feedback",
+		"vibration",
+		"ios",
+		"android",
+		"no-framework",
+		"htmx",
+		"alpine"
+	],
+	"dependencies": {
+		"@haptics/core": "workspace:*"
+	},
+	"devDependencies": {
+		"jsdom": "^29.0.0",
+		"tsup": "^8.0.0",
+		"vitest": "^4.1.0"
+	}
+}

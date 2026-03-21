@@ -1,21 +1,30 @@
-# react-haptics
+# haptics
 
-[![npm version](https://img.shields.io/npm/v/react-haptics)](https://www.npmjs.com/package/react-haptics)
-[![npm bundle size](https://img.shields.io/bundlephobia/minzip/react-haptics)](https://bundlephobia.com/package/react-haptics)
-[![license](https://img.shields.io/npm/l/react-haptics)](https://github.com/howdoiusekeyboard/react-haptics/blob/main/LICENSE)
+[![license](https://img.shields.io/npm/l/react-haptics)](https://github.com/howdoiusekeyboard/haptics/blob/main/LICENSE)
 
-Haptic feedback for React web apps. Works on iOS Safari (17.4+) and Android Chrome.
+Haptic feedback for web apps. Works on iOS Safari (17.4+) and Android Chrome.
+
+## Packages
+
+| Package | Version | Description |
+| --- | --- | --- |
+| [`@haptics/core`](./packages/core) | [![npm](https://img.shields.io/npm/v/@haptics/core)](https://www.npmjs.com/package/@haptics/core) | Framework-agnostic engine |
+| [`@haptics/react`](./packages/react) | [![npm](https://img.shields.io/npm/v/@haptics/react)](https://www.npmjs.com/package/@haptics/react) | React bindings |
+| [`@haptics/vue`](./packages/vue) | [![npm](https://img.shields.io/npm/v/@haptics/vue)](https://www.npmjs.com/package/@haptics/vue) | Vue 3 bindings |
+| [`@haptics/svelte`](./packages/svelte) | [![npm](https://img.shields.io/npm/v/@haptics/svelte)](https://www.npmjs.com/package/@haptics/svelte) | Svelte 5 bindings |
+| [`@haptics/vanilla`](./packages/vanilla) | [![npm](https://img.shields.io/npm/v/@haptics/vanilla)](https://www.npmjs.com/package/@haptics/vanilla) | Zero-framework |
+| [`react-haptics`](./packages/react-haptics) | [![npm](https://img.shields.io/npm/v/react-haptics)](https://www.npmjs.com/package/react-haptics) | Backward-compat shim |
 
 ## The problem
 
-Mobile browsers have two haptics paths, and both are broken in React:
+Mobile browsers have two haptics paths, and both have friction:
 
 - **Android**: `navigator.vibrate()` works, but every component needs to call it manually and there's no pattern abstraction
 - **iOS**: Safari never implemented the Vibration API. The only web haptics path is the `<input type="checkbox" switch>` trick — but React 18's concurrent scheduler breaks the native gesture chain required for it to fire
 
 ## How this works
 
-A capture-phase event listener on `document` fires **before** React's synthetic event delegation. From iOS Safari's perspective, the haptic trigger runs inside a direct native click handler — keeping the user gesture context intact.
+A capture-phase event listener on `document` fires **before** the framework's event system. From iOS Safari's perspective, the haptic trigger runs inside a direct native click handler — keeping the user gesture context intact.
 
 On Android, the standard Vibration API is used with pattern support.
 
@@ -24,15 +33,21 @@ Elements opt in with a single attribute. No per-component wiring.
 ## Install
 
 ```bash
-npm install react-haptics
+npm install @haptics/react    # React
+npm install @haptics/vue      # Vue 3
+npm install @haptics/svelte   # Svelte 5
+npm install @haptics/vanilla  # No framework
+npm install @haptics/core     # Engine only
 ```
+
+Existing `react-haptics` users: the package still works. No migration needed.
 
 ## Usage
 
 Wrap your app with `HapticsProvider`:
 
 ```tsx
-import { HapticsProvider } from "react-haptics";
+import { HapticsProvider } from "@haptics/react";
 
 export default function App({ children }) {
   return <HapticsProvider>{children}</HapticsProvider>;
@@ -50,7 +65,7 @@ Add `data-haptic` attributes to interactive elements:
 Or trigger imperatively via the hook:
 
 ```tsx
-import { useHaptics } from "react-haptics";
+import { useHaptics } from "@haptics/react";
 
 function SaveButton() {
   const { trigger } = useHaptics();
@@ -68,6 +83,46 @@ function SaveButton() {
 }
 ```
 
+### Vue
+
+```ts
+import { HapticsPlugin } from "@haptics/vue";
+
+app.use(HapticsPlugin);
+```
+
+```vue
+<button v-haptic="'success'">Save</button>
+```
+
+Or use the composable:
+
+```ts
+const { trigger } = useHaptics();
+trigger("success");
+```
+
+### Svelte
+
+```svelte
+<script>
+  import { setupHaptics, haptic } from '@haptics/svelte';
+  setupHaptics();
+</script>
+
+<button use:haptic={'success'}>Save</button>
+```
+
+### Vanilla JS
+
+```ts
+import { Haptics } from "@haptics/vanilla";
+
+const haptics = new Haptics();
+// Any <button data-haptic="success"> now triggers haptics on click
+// Or imperatively: haptics.trigger("success");
+```
+
 ## Presets
 
 | Name | Feel | Use case |
@@ -83,7 +138,7 @@ function SaveButton() {
 ## Custom patterns
 
 ```tsx
-import { HapticsProvider } from "react-haptics";
+import { HapticsProvider } from "@haptics/react";
 
 const patterns = {
   "card-tap": [
@@ -132,18 +187,19 @@ Returns:
 
 Works with or without HapticsProvider — falls back to built-in presets.
 
-### Engine exports
+### Core engine
 
-For custom integrations outside React:
+For framework-agnostic or custom integrations:
 
 ```ts
 import {
+  isIOS,
+  isVibrationSupported,
   iosTick,
   schedulePattern,
   toVibrateSequence,
-  isIOS,
-  isVibrationSupported,
-} from "react-haptics";
+  PRESETS,
+} from "@haptics/core";
 ```
 
 ## Limitations
@@ -153,12 +209,6 @@ import {
 **Desktop**: All calls are silent no-ops. No haptic hardware exists on desktop browsers.
 
 **System haptics**: iOS haptics require the user's system haptics setting to be enabled (Settings > Sounds & Haptics > System Haptics).
-
-## How iOS haptics work under the hood
-
-Safari 17.4+ added `<input type="checkbox" switch>` (the iOS-style toggle). Clicking this input triggers Taptic Engine feedback as a side effect. By creating a hidden switch checkbox, clicking it programmatically, and immediately removing it, we get one haptic tick per invocation.
-
-The catch: iOS only fires the haptic when the click originates from a native user gesture. React 18's concurrent mode batches and schedules events through its own dispatcher, which breaks the gesture chain from iOS's perspective. Our capture-phase listener runs in the native event propagation path, before React touches it.
 
 ## License
 

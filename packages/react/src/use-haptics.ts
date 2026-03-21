@@ -1,15 +1,13 @@
-"use client";
-
-import { useCallback, useContext, useEffect, useRef } from "react";
-import { HapticsContext } from "./provider";
+import { useContext, useCallback, useRef, useEffect } from "react";
 import {
-	isIOS,
+	PRESETS,
 	isVibrationSupported,
-	schedulePattern,
+	isIOS,
 	toVibrateSequence,
-} from "./engine";
-import { PRESETS, type PresetName } from "./presets";
-import type { HapticPattern } from "./types";
+	schedulePattern,
+} from "@haptics/core";
+import type { PresetName } from "@haptics/core";
+import { HapticsContext } from "./provider";
 
 /**
  * Trigger haptic feedback imperatively.
@@ -23,7 +21,7 @@ import type { HapticPattern } from "./types";
  */
 export function useHaptics() {
 	const ctx = useContext(HapticsContext);
-	const patterns: Record<string, HapticPattern> = ctx?.patterns ?? PRESETS;
+	const patterns = ctx?.patterns ?? PRESETS;
 	const respectReducedMotion = ctx?.respectReducedMotion ?? true;
 
 	const reducedMotionRef = useRef(false);
@@ -43,13 +41,12 @@ export function useHaptics() {
 		(action: PresetName | (string & {})) => {
 			if (respectReducedMotion && reducedMotionRef.current) return;
 
-			const pattern = patterns[action];
+			const pattern = patterns[action as keyof typeof patterns];
 			if (!pattern) return;
 
-			if (isVibrationSupported) {
+			if (isVibrationSupported()) {
 				navigator.vibrate(toVibrateSequence(pattern));
-			} else if (isIOS) {
-				// Best-effort: only works within a user gesture context
+			} else if (isIOS()) {
 				schedulePattern(pattern);
 			}
 		},
@@ -57,14 +54,14 @@ export function useHaptics() {
 	);
 
 	const cancel = useCallback(() => {
-		if (isVibrationSupported) navigator.vibrate(0);
+		if (isVibrationSupported()) navigator.vibrate(0);
 	}, []);
 
 	return {
 		trigger,
 		cancel,
-		isSupported: isVibrationSupported,
+		isSupported: isVibrationSupported(),
 		/** True when iOS haptics are available (via HapticsProvider + data-haptic attributes) */
-		isIOSSupported: isIOS,
+		isIOSSupported: isIOS(),
 	};
 }

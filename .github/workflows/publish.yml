@@ -1,8 +1,14 @@
 name: Publish
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - "core@*"
+      - "react@*"
+      - "react-haptics@*"
+      - "vue@*"
+      - "svelte@*"
+      - "vanilla@*"
 
 permissions:
   contents: read
@@ -24,11 +30,47 @@ jobs:
 
       - run: bun run test
 
+      - name: Determine package directory
+        id: pkg
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          PKG_NAME="${TAG%%@*}"
+          case "$PKG_NAME" in
+            core)           DIR="packages/core" ;;
+            react)          DIR="packages/react" ;;
+            react-haptics)  DIR="packages/react-haptics" ;;
+            vue)            DIR="packages/vue" ;;
+            svelte)         DIR="packages/svelte" ;;
+            vanilla)        DIR="packages/vanilla" ;;
+            *)              echo "Unknown package: $PKG_NAME" && exit 1 ;;
+          esac
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+          echo "Publishing $PKG_NAME from $DIR"
+
+      - name: Resolve workspace protocol
+        run: |
+          cd "${{ steps.pkg.outputs.dir }}"
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            for (const depType of ['dependencies', 'devDependencies', 'peerDependencies']) {
+              if (!pkg[depType]) continue;
+              for (const [name, ver] of Object.entries(pkg[depType])) {
+                if (ver === 'workspace:*') {
+                  const ref = JSON.parse(fs.readFileSync('../../packages/' + name.replace('@haptics/', '') + '/package.json', 'utf8'));
+                  pkg[depType][name] = '^' + ref.version;
+                }
+              }
+            }
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
 
       - run: npm publish --provenance
+        working-directory: ${{ steps.pkg.outputs.dir }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,0 +1,62 @@
+{
+	"name": "@haptics/vue",
+	"version": "1.0.0",
+	"description": "Vue plugin, directive, and composable for haptic feedback. iOS Safari and Android Vibration API.",
+	"type": "module",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.js"
+			},
+			"require": {
+				"types": "./dist/index.d.cts",
+				"default": "./dist/index.cjs"
+			}
+		}
+	},
+	"files": ["dist"],
+	"sideEffects": false,
+	"scripts": {
+		"build": "tsup",
+		"dev": "tsup --watch",
+		"type-check": "tsc --noEmit",
+		"test": "vitest run"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/howdoiusekeyboard/haptics.git",
+		"directory": "packages/vue"
+	},
+	"author": "Howdoiusekeyboard",
+	"license": "MIT",
+	"keywords": [
+		"haptics",
+		"vue",
+		"haptic-feedback",
+		"vibration",
+		"ios",
+		"android",
+		"directive",
+		"composable"
+	],
+	"dependencies": {
+		"@haptics/core": "workspace:*"
+	},
+	"peerDependencies": {
+		"vue": ">=3.3"
+	},
+	"devDependencies": {
+		"@vue/test-utils": "^2.4.0",
+		"jsdom": "^29.0.0",
+		"tsup": "^8.0.0",
+		"vitest": "^4.1.0",
+		"vue": "^3.5.0"
+	}
+}

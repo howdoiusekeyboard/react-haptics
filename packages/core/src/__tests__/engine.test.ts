@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { toVibrateSequence, schedulePattern, iosTick } from "../engine";
+import {
+	toVibrateSequence,
+	schedulePattern,
+	iosTick,
+	isIOS,
+	isVibrationSupported,
+	resetDetection,
+} from "../engine";
 import type { HapticPattern } from "../types";
 import { PRESETS } from "../presets";
 
@@ -14,14 +21,11 @@ describe("toVibrateSequence", () => {
 			{ duration: 20 },
 			{ delay: 15, duration: 10 },
 		];
-		// First segment: vibrate 20ms
-		// Second segment: pause 15ms, vibrate 10ms
 		expect(toVibrateSequence(pattern)).toEqual([20, 15, 10]);
 	});
 
 	it("handles a leading delay by prepending 0ms vibration", () => {
 		const pattern: HapticPattern = [{ delay: 100, duration: 30 }];
-		// Can't start with a pause, so: vibrate 0ms, pause 100ms, vibrate 30ms
 		expect(toVibrateSequence(pattern)).toEqual([0, 100, 30]);
 	});
 
@@ -30,7 +34,6 @@ describe("toVibrateSequence", () => {
 			{ duration: 30 },
 			{ duration: 20 },
 		];
-		// Without a delay, we need an explicit 0ms pause separator
 		expect(toVibrateSequence(pattern)).toEqual([30, 0, 20]);
 	});
 
@@ -60,7 +63,6 @@ describe("toVibrateSequence", () => {
 		for (const [name, pattern] of Object.entries(PRESETS)) {
 			const seq = toVibrateSequence(pattern);
 			expect(seq.length, `${name} should produce a non-empty sequence`).toBeGreaterThan(0);
-			// Every element should be a non-negative number
 			for (const n of seq) {
 				expect(n, `${name}: all values must be >= 0`).toBeGreaterThanOrEqual(0);
 			}
@@ -68,13 +70,8 @@ describe("toVibrateSequence", () => {
 	});
 
 	it("produces correct alternating vibrate/pause pattern for presets", () => {
-		// selection: single segment [{ duration: 15 }] → [15]
 		expect(toVibrateSequence(PRESETS.selection)).toEqual([15]);
-
-		// impact-light: [{ duration: 20 }, { delay: 15, duration: 10 }] → [20, 15, 10]
 		expect(toVibrateSequence(PRESETS["impact-light"])).toEqual([20, 15, 10]);
-
-		// success: 3 segments, first no delay, second delay 15, third delay 10
 		expect(toVibrateSequence(PRESETS.success)).toEqual([30, 15, 40, 10, 50]);
 	});
 });
@@ -89,8 +86,6 @@ describe("schedulePattern", () => {
 	});
 
 	it("fires iosTick immediately for first segment without delay", () => {
-		// We can't easily test iosTick in jsdom (no real checkbox switch),
-		// but we can verify setTimeout scheduling
 		const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
 
 		const pattern: HapticPattern = [
@@ -99,7 +94,6 @@ describe("schedulePattern", () => {
 		];
 		schedulePattern(pattern);
 
-		// Second segment should be scheduled at offset 20 (duration) + 15 (delay) = 35ms
 		expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 35);
 		setTimeoutSpy.mockRestore();
 	});
@@ -114,10 +108,8 @@ describe("schedulePattern", () => {
 		];
 		schedulePattern(pattern);
 
-		// Segment 2: offset = 30 (dur) + 15 (delay) = 45ms
-		// Segment 3: offset = 45 + 40 (dur) + 10 (delay) = 95ms
 		const calls = setTimeoutSpy.mock.calls;
-		expect(calls).toHaveLength(2); // first segment fires immediately
+		expect(calls).toHaveLength(2);
 		expect(calls[0][1]).toBe(45);
 		expect(calls[1][1]).toBe(95);
 
@@ -127,7 +119,6 @@ describe("schedulePattern", () => {
 
 describe("iosTick", () => {
 	it("does not throw in jsdom environment", () => {
-		// iosTick creates DOM elements — should not throw even in non-Safari env
 		expect(() => iosTick()).not.toThrow();
 	});
 
@@ -142,5 +133,50 @@ describe("iosTick", () => {
 
 		appendSpy.mockRestore();
 		removeSpy.mockRestore();
+	});
+});
+
+describe("platform detection", () => {
+	afterEach(() => {
+		resetDetection();
+	});
+
+	it("isIOS returns a boolean", () => {
+		expect(typeof isIOS()).toBe("boolean");
+	});
+
+	it("isVibrationSupported returns a boolean", () => {
+		expect(typeof isVibrationSupported()).toBe("boolean");
+	});
+
+	it("resetDetection clears cached values", () => {
+		isIOS();
+		isVibrationSupported();
+
+		resetDetection();
+
+		Object.defineProperty(navigator, "vibrate", {
+			value: () => true,
+			writable: true,
+			configurable: true,
+		});
+
+		expect(isVibrationSupported()).toBe(true);
+
+		Object.defineProperty(navigator, "vibrate", {
+			value: undefined,
+			writable: true,
+			configurable: true,
+		});
+	});
+
+	it("caches results after first call", () => {
+		const first = isIOS();
+		const second = isIOS();
+		expect(first).toBe(second);
+
+		const firstVib = isVibrationSupported();
+		const secondVib = isVibrationSupported();
+		expect(firstVib).toBe(secondVib);
 	});
 });
