@@ -166,7 +166,9 @@ Custom patterns are merged with built-in presets. Same-name customs override the
 | Platform | Mechanism | Notes |
 | --- | --- | --- |
 | iOS Safari 17.4+ | Checkbox-switch trick | One tick per segment. Requires system haptics enabled. |
-| Android Chrome | `navigator.vibrate()` | Full pattern support with timing sequences. |
+| Android Chrome / Edge | `navigator.vibrate()` | Full pattern support with timing sequences. |
+| Samsung Internet | `navigator.vibrate()` | Full pattern support. |
+| Firefox Android | Not supported | Vibration API removed in Firefox 129 (Aug 2024). |
 | Desktop | No-op | No haptic hardware. All calls resolve silently. |
 
 ## API
