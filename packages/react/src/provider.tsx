@@ -59,13 +59,18 @@ export function HapticsProvider({
 		};
 		mql.addEventListener("change", onMqlChange);
 
+		let lastCancel: (() => void) | null = null;
+
 		const handler = (e: MouseEvent) => {
 			if (reducedMotionRef.current && prefersReducedMotion) return;
 			const target = (e.target as Element)?.closest("[data-haptic]");
 			if (!target) return;
 			const action = target.getAttribute("data-haptic");
-			if (action && action in patternsRef.current) {
-				schedulePattern(
+			if (
+				action &&
+				Object.prototype.hasOwnProperty.call(patternsRef.current, action)
+			) {
+				lastCancel = schedulePattern(
 					patternsRef.current[action as keyof typeof patternsRef.current],
 				);
 			}
@@ -76,6 +81,7 @@ export function HapticsProvider({
 		return () => {
 			document.removeEventListener("click", handler, { capture: true });
 			mql.removeEventListener("change", onMqlChange);
+			lastCancel?.();
 		};
 	}, []);
 

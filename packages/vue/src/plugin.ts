@@ -22,8 +22,15 @@ export interface HapticsContext {
 export const HAPTICS_INJECTION_KEY: InjectionKey<HapticsContext> =
 	Symbol("haptics");
 
+let _cleanup: (() => void) | null = null;
+
 export const HapticsPlugin = {
 	install(app: App, options: HapticsPluginOptions = {}) {
+		// Idempotent: tear down listeners from a prior install before re-attaching.
+		// Guards against HMR, repeated app.use() calls in tests, and multiple Vue apps.
+		_cleanup?.();
+		_cleanup = null;
+
 		const patterns: Record<string, HapticPattern> = {
 			...PRESETS,
 			...options.patterns,
@@ -33,6 +40,9 @@ export const HapticsPlugin = {
 		app.provide(HAPTICS_INJECTION_KEY, { patterns, respectReducedMotion });
 		_setConfig(patterns, respectReducedMotion);
 
+		const cleanups: Array<() => void> = [];
+		let lastCancel: (() => void) | null = null;
+
 		if (typeof document !== "undefined" && isIOS()) {
 			let prefersReducedMotion = false;
 
@@ -41,10 +51,14 @@ export const HapticsPlugin = {
 				prefersReducedMotion = mql.matches;
 				_setPrefersReducedMotion(prefersReducedMotion);
 
-				mql.addEventListener("change", (e) => {
+				const onMqlChange = (e: MediaQueryListEvent) => {
 					prefersReducedMotion = e.matches;
 					_setPrefersReducedMotion(e.matches);
-				});
+				};
+				mql.addEventListener("change", onMqlChange);
+				cleanups.push(() =>
+					mql.removeEventListener("change", onMqlChange),
+				);
 			}
 
 			const handler = (e: MouseEvent) => {
@@ -52,8 +66,11 @@ export const HapticsPlugin = {
 				const target = (e.target as Element)?.closest("[data-haptic]");
 				if (!target) return;
 				const action = target.getAttribute("data-haptic");
-				if (action && action in patterns) {
-					schedulePattern(patterns[action]);
+				if (
+					action &&
+					Object.prototype.hasOwnProperty.call(patterns, action)
+				) {
+					lastCancel = schedulePattern(patterns[action]);
 				}
 			};
 
@@ -61,6 +78,21 @@ export const HapticsPlugin = {
 				capture: true,
 				passive: true,
 			});
+			cleanups.push(() =>
+				document.removeEventListener("click", handler, { capture: true }),
+			);
 		}
+
+		_cleanup = () => {
+			for (const fn of cleanups) fn();
+			lastCancel?.();
+			lastCancel = null;
+		};
 	},
 };
+
+/** @internal Tear down listeners and reset config. For tests and HMR. */
+export function _resetPlugin(): void {
+	_cleanup?.();
+	_cleanup = null;
+}

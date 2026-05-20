@@ -59,6 +59,33 @@ describe("toVibrateSequence", () => {
 		expect(toVibrateSequence([])).toEqual([]);
 	});
 
+	it("coerces negative durations to 0", () => {
+		expect(toVibrateSequence([{ duration: -50 }])).toEqual([0]);
+	});
+
+	it("coerces NaN durations to 0", () => {
+		expect(toVibrateSequence([{ duration: Number.NaN }])).toEqual([0]);
+	});
+
+	it("floors fractional durations", () => {
+		expect(toVibrateSequence([{ duration: 15.9 }])).toEqual([15]);
+	});
+
+	it("coerces negative delays to 0", () => {
+		expect(
+			toVibrateSequence([{ duration: 10 }, { delay: -100, duration: 20 }]),
+		).toEqual([10, 0, 20]);
+	});
+
+	it("caps segment count at 64", () => {
+		const huge: HapticPattern = Array.from({ length: 200 }, () => ({
+			duration: 1,
+		}));
+		const seq = toVibrateSequence(huge);
+		// 64 segments → 64 vibrations + 63 inserted 0ms pauses = 127 entries
+		expect(seq.length).toBe(127);
+	});
+
 	it("converts all built-in presets without error", () => {
 		for (const [name, pattern] of Object.entries(PRESETS)) {
 			const seq = toVibrateSequence(pattern);
@@ -113,6 +140,37 @@ describe("schedulePattern", () => {
 		expect(calls[0][1]).toBe(45);
 		expect(calls[1][1]).toBe(95);
 
+		setTimeoutSpy.mockRestore();
+	});
+
+	it("returns a cancel function that clears pending timers", () => {
+		const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
+		const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
+
+		const pattern: HapticPattern = [
+			{ duration: 30 },
+			{ delay: 15, duration: 40 },
+			{ delay: 10, duration: 50 },
+		];
+		const cancel = schedulePattern(pattern);
+		expect(typeof cancel).toBe("function");
+		cancel();
+		expect(clearTimeoutSpy).toHaveBeenCalledTimes(setTimeoutSpy.mock.calls.length);
+
+		setTimeoutSpy.mockRestore();
+		clearTimeoutSpy.mockRestore();
+	});
+
+	it("caps total scheduled offset at 60s", () => {
+		const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
+		// pattern that would otherwise schedule a tick past the 60s cap
+		const pattern: HapticPattern = [
+			{ duration: 1 },
+			{ delay: 70_000, duration: 1 },
+		];
+		schedulePattern(pattern);
+		// second segment delay exceeds MAX_TOTAL_OFFSET_MS, so it must be skipped
+		expect(setTimeoutSpy).not.toHaveBeenCalled();
 		setTimeoutSpy.mockRestore();
 	});
 });

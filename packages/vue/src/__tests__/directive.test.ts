@@ -72,4 +72,46 @@ describe("vHaptic directive", () => {
 
 		expect(el.hasAttribute("data-haptic")).toBe(false);
 	});
+
+	it("skips haptic when click was preventDefault'd", () => {
+		const TestComponent = defineComponent({
+			setup() {
+				return () =>
+					withDirectives(
+						h(
+							"button",
+							{
+								id: "btn",
+								onClickCapture: (e: Event) => {
+									e.preventDefault();
+								},
+							},
+							"Click",
+						),
+						[[vHaptic, "selection"]],
+					);
+			},
+		});
+
+		const wrapper = mount(TestComponent);
+		const el = wrapper.find("#btn").element as HTMLButtonElement;
+		el.dispatchEvent(new MouseEvent("click", { cancelable: true, bubbles: true }));
+
+		expect(vibrateMock).not.toHaveBeenCalled();
+	});
+
+	it("ignores __proto__ as a directive value", async () => {
+		const TestComponent = defineComponent({
+			setup() {
+				return () =>
+					withDirectives(h("button", { id: "btn" }, "Click"), [
+						[vHaptic, "__proto__"],
+					]);
+			},
+		});
+
+		const wrapper = mount(TestComponent);
+		await wrapper.find("#btn").trigger("click");
+		expect(vibrateMock).not.toHaveBeenCalled();
+	});
 });

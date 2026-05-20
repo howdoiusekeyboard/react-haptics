@@ -98,4 +98,27 @@ describe("Haptics", () => {
 		expect(h.isIOSSupported).toBe(false);
 		h.destroy();
 	});
+
+	it("ignores __proto__ as a data-haptic value (delegation path)", () => {
+		const container = document.createElement("div");
+		document.body.appendChild(container);
+
+		const h = new Haptics({ delegateFrom: container });
+		const btn = document.createElement("button");
+		btn.setAttribute("data-haptic", "__proto__");
+		container.appendChild(btn);
+
+		expect(() => btn.click()).not.toThrow();
+		expect(vibrateMock).not.toHaveBeenCalled();
+
+		h.destroy();
+		document.body.removeChild(container);
+	});
+
+	it("ignores __proto__ in imperative trigger", () => {
+		const h = new Haptics();
+		expect(() => h.trigger("__proto__")).not.toThrow();
+		expect(vibrateMock).not.toHaveBeenCalled();
+		h.destroy();
+	});
 });

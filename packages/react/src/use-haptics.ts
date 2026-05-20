@@ -41,6 +41,7 @@ export function useHaptics() {
 		(action: PresetName | (string & {})) => {
 			if (respectReducedMotion && reducedMotionRef.current) return;
 
+			if (!Object.prototype.hasOwnProperty.call(patterns, action)) return;
 			const pattern = patterns[action as keyof typeof patterns];
 			if (!pattern) return;
 

@@ -43,6 +43,7 @@ export function useHaptics() {
 	const trigger = (action: PresetName | (string & {})) => {
 		if (respectReducedMotion && prefersReducedMotion.value) return;
 
+		if (!Object.prototype.hasOwnProperty.call(patterns, action)) return;
 		const pattern = patterns[action as keyof typeof patterns];
 		if (!pattern) return;
 

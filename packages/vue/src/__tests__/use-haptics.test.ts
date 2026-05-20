@@ -74,4 +74,17 @@ describe("useHaptics", () => {
 		const { result } = mountComposable(() => useHaptics());
 		expect(result.isIOSSupported).toBe(false);
 	});
+
+	it("ignores __proto__ as an action name", () => {
+		const { result } = mountComposable(() => useHaptics());
+		expect(() => result.trigger("__proto__")).not.toThrow();
+		expect(vibrateMock).not.toHaveBeenCalled();
+	});
+
+	it("ignores constructor and toString as action names", () => {
+		const { result } = mountComposable(() => useHaptics());
+		result.trigger("constructor");
+		result.trigger("toString");
+		expect(vibrateMock).not.toHaveBeenCalled();
+	});
 });

@@ -69,4 +69,27 @@ describe("haptic action", () => {
 
 		expect(vibrateMock).toHaveBeenCalledWith([30, 15, 40, 10, 50]);
 	});
+
+	it("skips haptic when click was preventDefault'd by a prior handler", () => {
+		const node = document.createElement("button");
+		haptic(node, "selection");
+
+		node.addEventListener(
+			"click",
+			(e) => {
+				e.preventDefault();
+			},
+			{ capture: true },
+		);
+
+		node.dispatchEvent(new MouseEvent("click", { cancelable: true }));
+		expect(vibrateMock).not.toHaveBeenCalled();
+	});
+
+	it("ignores __proto__ as an action name", () => {
+		const node = document.createElement("button");
+		haptic(node, "__proto__");
+		expect(() => node.click()).not.toThrow();
+		expect(vibrateMock).not.toHaveBeenCalled();
+	});
 });

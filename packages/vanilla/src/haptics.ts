@@ -43,6 +43,7 @@ export class Haptics {
 	private readonly clickHandler: (e: Event) => void;
 	private mqlHandler: ((e: MediaQueryListEvent) => void) | null = null;
 	private mql: MediaQueryList | null = null;
+	private lastCancel: (() => void) | null = null;
 
 	readonly isSupported: boolean;
 	readonly isIOSSupported: boolean;
@@ -76,13 +77,17 @@ export class Haptics {
 			if (!target) return;
 
 			const action = target.getAttribute("data-haptic");
-			if (!action || !(action in this.patterns)) return;
+			if (
+				!action ||
+				!Object.prototype.hasOwnProperty.call(this.patterns, action)
+			)
+				return;
 
 			const pattern = this.patterns[action];
 			if (this.isSupported) {
 				navigator.vibrate(toVibrateSequence(pattern));
 			} else if (this.isIOSSupported) {
-				schedulePattern(pattern);
+				this.lastCancel = schedulePattern(pattern);
 			}
 		};
 
@@ -97,19 +102,22 @@ export class Haptics {
 		if (this.destroyed) return;
 		if (this.respectReducedMotion && this.prefersReducedMotion) return;
 
+		if (!Object.prototype.hasOwnProperty.call(this.patterns, action)) return;
 		const pattern = this.patterns[action];
 		if (!pattern) return;
 
 		if (this.isSupported) {
 			navigator.vibrate(toVibrateSequence(pattern));
 		} else if (this.isIOSSupported) {
-			schedulePattern(pattern);
+			this.lastCancel = schedulePattern(pattern);
 		}
 	}
 
-	/** Cancel active vibration (Android only). */
+	/** Cancel active vibration (Android) and clear pending iOS pattern ticks. */
 	cancel(): void {
 		if (this.isSupported) navigator.vibrate(0);
+		this.lastCancel?.();
+		this.lastCancel = null;
 	}
 
 	/** Remove all listeners and clean up. */
@@ -124,5 +132,8 @@ export class Haptics {
 		if (this.mql && this.mqlHandler) {
 			this.mql.removeEventListener("change", this.mqlHandler);
 		}
+
+		this.lastCancel?.();
+		this.lastCancel = null;
 	}
 }

@@ -50,8 +50,10 @@ export function haptic(
 
 	node.setAttribute("data-haptic", currentAction);
 
-	const handler = () => {
+	const handler = (e: Event) => {
+		if (e.defaultPrevented) return;
 		if (respectReducedMotion && prefersReducedMotion) return;
+		if (!Object.prototype.hasOwnProperty.call(patterns, currentAction)) return;
 		const pattern = patterns[currentAction];
 		if (!pattern) return;
 

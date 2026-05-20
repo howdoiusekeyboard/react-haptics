@@ -63,4 +63,27 @@ describe("createHaptics", () => {
 		const haptics = createHaptics();
 		expect(haptics.isIOSSupported).toBe(false);
 	});
+
+	it("exposes a destroy method", () => {
+		const haptics = createHaptics();
+		expect(typeof haptics.destroy).toBe("function");
+		expect(() => haptics.destroy()).not.toThrow();
+		// idempotent
+		expect(() => haptics.destroy()).not.toThrow();
+	});
+
+	it("rejects __proto__ as an action name", () => {
+		const haptics = createHaptics();
+		expect(() => haptics.trigger("__proto__")).not.toThrow();
+		expect(vibrateMock).not.toHaveBeenCalled();
+		haptics.destroy();
+	});
+
+	it("rejects constructor/toString as action names", () => {
+		const haptics = createHaptics();
+		haptics.trigger("constructor");
+		haptics.trigger("toString");
+		expect(vibrateMock).not.toHaveBeenCalled();
+		haptics.destroy();
+	});
 });

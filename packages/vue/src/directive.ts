@@ -24,9 +24,11 @@ export const vHaptic: Directive<HTMLElement, HapticValue> = {
 		el.setAttribute("data-haptic", action);
 
 		if (isVibrationSupported()) {
-			const handler = () => {
+			const handler = (e: Event) => {
+				if (e.defaultPrevented) return;
 				if (_shouldSuppress()) return;
 				const patterns = _getPatterns();
+				if (!Object.prototype.hasOwnProperty.call(patterns, action)) return;
 				const pattern = patterns[action];
 				if (pattern) {
 					navigator.vibrate(toVibrateSequence(pattern));

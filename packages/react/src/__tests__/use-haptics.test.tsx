@@ -100,4 +100,25 @@ describe("useHaptics", () => {
 			});
 		}).not.toThrow();
 	});
+
+	it("ignores __proto__ as an action name", () => {
+		const { result } = renderHook(() => useHaptics());
+
+		expect(() => {
+			act(() => {
+				result.current.trigger("__proto__");
+			});
+		}).not.toThrow();
+		expect(vibrateMock).not.toHaveBeenCalled();
+	});
+
+	it("ignores constructor and toString as action names", () => {
+		const { result } = renderHook(() => useHaptics());
+
+		act(() => {
+			result.current.trigger("constructor");
+			result.current.trigger("toString");
+		});
+		expect(vibrateMock).not.toHaveBeenCalled();
+	});
 });

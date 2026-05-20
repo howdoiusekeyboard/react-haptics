@@ -7,6 +7,7 @@ export interface HapticsConfig {
 }
 
 let _config: HapticsConfig | null = null;
+let _cleanup: (() => void) | null = null;
 
 /**
  * Initialize haptics context in a Svelte component tree.
@@ -14,6 +15,8 @@ let _config: HapticsConfig | null = null;
  *
  * Registers a capture-phase click listener on document for iOS haptics
  * and sets up context for child components using `use:haptic` and `createHaptics`.
+ *
+ * Idempotent: calling again tears down prior listeners before re-attaching.
  *
  * @example
  * ```svelte
@@ -30,6 +33,10 @@ export function setupHaptics(
 		respectReducedMotion?: boolean;
 	} = {},
 ): void {
+	// Idempotent: tear down listeners from a prior call before re-attaching.
+	_cleanup?.();
+	_cleanup = null;
+
 	const patterns: Record<string, HapticPattern> = {
 		...PRESETS,
 		...options.patterns,
@@ -38,15 +45,20 @@ export function setupHaptics(
 	const config: HapticsConfig = { patterns, respectReducedMotion };
 	_config = config;
 
+	const cleanups: Array<() => void> = [];
+	let lastCancel: (() => void) | null = null;
+
 	if (typeof document !== "undefined" && isIOS()) {
 		let prefersReducedMotion = false;
 
 		if (typeof window !== "undefined" && window.matchMedia) {
 			const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
 			prefersReducedMotion = mql.matches;
-			mql.addEventListener("change", (e) => {
+			const onMqlChange = (e: MediaQueryListEvent) => {
 				prefersReducedMotion = e.matches;
-			});
+			};
+			mql.addEventListener("change", onMqlChange);
+			cleanups.push(() => mql.removeEventListener("change", onMqlChange));
 		}
 
 		const handler = (e: MouseEvent) => {
@@ -54,8 +66,11 @@ export function setupHaptics(
 			const target = (e.target as Element)?.closest("[data-haptic]");
 			if (!target) return;
 			const action = target.getAttribute("data-haptic");
-			if (action && action in patterns) {
-				schedulePattern(patterns[action]);
+			if (
+				action &&
+				Object.prototype.hasOwnProperty.call(patterns, action)
+			) {
+				lastCancel = schedulePattern(patterns[action]);
 			}
 		};
 
@@ -63,14 +78,25 @@ export function setupHaptics(
 			capture: true,
 			passive: true,
 		});
+		cleanups.push(() =>
+			document.removeEventListener("click", handler, { capture: true }),
+		);
 	}
+
+	_cleanup = () => {
+		for (const fn of cleanups) fn();
+		lastCancel?.();
+		lastCancel = null;
+	};
 }
 
 export function getHapticsConfig(): HapticsConfig | null {
 	return _config;
 }
 
-/** @internal Reset config for testing only. */
+/** @internal Reset config and tear down listeners. For tests and HMR. */
 export function _resetConfig(): void {
+	_cleanup?.();
+	_cleanup = null;
 	_config = null;
 }

@@ -1,6 +1,6 @@
 {
 	"name": "@haptics/vanilla",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Zero-framework haptic feedback controller. Event delegation, imperative API, works with any stack.",
 	"type": "module",
 	"main": "./dist/index.cjs",

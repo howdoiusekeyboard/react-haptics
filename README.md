@@ -203,13 +203,36 @@ import {
 } from "@haptics/core";
 ```
 
+## Bundle size
+
+| Package | ESM (gzip) | CJS (gzip) |
+| --- | --- | --- |
+| `@haptics/core` | 1.33 KB | 1.36 KB |
+| `@haptics/react` | 1.04 KB | 1.06 KB |
+| `@haptics/vue` | 1.33 KB | 1.34 KB |
+| `@haptics/svelte` | 1.09 KB | 1.11 KB |
+| `@haptics/vanilla` | 0.89 KB | 0.90 KB |
+| `react-haptics` | 0.23 KB | 0.33 KB |
+
+Framework adapter sizes exclude the workspace `@haptics/core` dependency (~1.33 KB gz), which is resolved by the consumer's bundler.
+
 ## Limitations
 
-**iOS imperative trigger**: `trigger()` from `useHaptics()` attempts a best-effort iOS haptic via `schedulePattern()`, but it only works when called directly within a user gesture context (click/tap handler in the same call stack). For reliable iOS haptics, use declarative `data-haptic` attributes with `HapticsProvider`.
+**iOS imperative trigger**: `trigger()` from `useHaptics()` / `createHaptics()` attempts a best-effort iOS haptic via `schedulePattern()`, but it only works when called directly within a user gesture context (click/tap handler in the same call stack). For reliable iOS haptics, use declarative `data-haptic` attributes with `HapticsProvider` (React), `HapticsPlugin` (Vue), or `setupHaptics()` (Svelte).
 
 **Desktop**: All calls are silent no-ops. No haptic hardware exists on desktop browsers.
 
 **System haptics**: iOS haptics require the user's system haptics setting to be enabled (Settings > Sounds & Haptics > System Haptics).
+
+**Shadow DOM**: The capture-phase listener uses `closest()`, which does not pierce closed shadow trees. Clicks originating inside a closed shadow root match only the host element. If you need `data-haptic` annotations *inside* a shadow tree to fire, attach a `Haptics` instance from `@haptics/vanilla` with `delegateFrom` set to the shadow root.
+
+**Multi-instance state**: The Vue and Svelte adapters store the active config in module-level state — installing the plugin twice in the same JS context (or instantiating multiple Svelte apps) is idempotent, but the most-recently-installed configuration wins for all consumers. The React adapter is per-provider-scope and not affected.
+
+**Pattern length cap**: Patterns are clamped to 64 segments and a total scheduled offset of 60 seconds. Runaway patterns from buggy or untrusted input are truncated rather than queueing thousands of timers.
+
+**`prefers-reduced-motion`**: Honored by default. Calls are suppressed when the user has enabled reduced motion at the OS level. Pass `respectReducedMotion={false}` to override.
+
+**`event.defaultPrevented`**: The Vue directive and Svelte action skip the haptic when the click was already `preventDefault`'d by an earlier handler. The capture-phase listeners (provider / plugin / setupHaptics) run before bubble-phase `preventDefault` calls, so they always fire — useful for haptics on links that the framework intercepts for client-side navigation.
 
 ## License
 
