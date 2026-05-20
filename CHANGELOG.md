@@ -6,6 +6,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [1.0.1] - 2026-05-20
 
+### Deprecated
+
+- `react-haptics` on npm — superseded by `@haptics/react`. The package remains installable (re-exports from `@haptics/react` + `@haptics/core`) but now surfaces a deprecation notice on install.
+- `svelte-haptics` on npm — was a placeholder; use `@haptics/svelte`.
+
+### Infrastructure
+
+- Publish workflow migrated to npm Trusted Publishing (OIDC). The long-lived `NPM_TOKEN` secret is no longer used; each package's publish access on npm is configured to `Require 2FA and disallow tokens`, with GitHub Actions registered as a trusted publisher.
+
 ### Fixed
 
 - All adapters now reject `data-haptic` values that resolve to inherited object properties (`__proto__`, `constructor`, `toString`, etc.). Previously, these would resolve to `Object.prototype` and throw inside the click handler.

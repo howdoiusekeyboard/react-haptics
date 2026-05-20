@@ -39,7 +39,7 @@ npm install @haptics/vanilla  # No framework
 npm install @haptics/core     # Engine only
 ```
 
-Existing `react-haptics` users: the package still works. No migration needed.
+> The legacy `react-haptics` and placeholder `svelte-haptics` packages are deprecated on npm. Existing `react-haptics` installs continue to function (it re-exports from `@haptics/react`), but new projects should install `@haptics/react` directly.
 
 ## Usage
 
