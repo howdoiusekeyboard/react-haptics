@@ -65,14 +65,12 @@ jobs:
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
 
+      # Node 24 ships with npm 11.x, which supports Trusted Publishing natively.
+      # Avoids the `promise-retry` self-upgrade bug from `npm install -g npm@latest` on Node 22.
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org
-
-      # npm Trusted Publishing requires npm >= 11.5.1; Node 22 ships with npm 10.x.
-      - name: Upgrade npm for Trusted Publishing
-        run: npm install -g npm@latest
 
       - run: npm publish --provenance
         working-directory: ${{ steps.pkg.outputs.dir }}
