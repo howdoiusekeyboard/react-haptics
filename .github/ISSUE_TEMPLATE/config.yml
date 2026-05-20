@@ -1,1 +1,14 @@
 blank_issues_enabled: false
+contact_links:
+  - name: Question or how-to
+    url: https://github.com/howdoiusekeyboard/haptics/discussions/categories/q-a
+    about: Ask in Discussions Q&A — faster response, searchable for the next person.
+  - name: Idea or feedback
+    url: https://github.com/howdoiusekeyboard/haptics/discussions/categories/ideas
+    about: Sketch a feature before opening a formal request.
+  - name: Show your project using @haptics
+    url: https://github.com/howdoiusekeyboard/haptics/discussions/categories/show-and-tell
+    about: Share what you built — happy to add it to the README's "used in production" list.
+  - name: Security vulnerability (private)
+    url: https://github.com/howdoiusekeyboard/haptics/security/advisories/new
+    about: Report security issues privately. Do not open a public issue.

@@ -1,0 +1,49 @@
+title: "[Q] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before asking, please check:
+        - [README](https://github.com/howdoiusekeyboard/haptics#readme)
+        - [Existing Q&A discussions](https://github.com/howdoiusekeyboard/haptics/discussions/categories/q-a)
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Which package?
+      multiple: true
+      options:
+        - "@haptics/core"
+        - "@haptics/react"
+        - "@haptics/vue"
+        - "@haptics/svelte"
+        - "@haptics/vanilla"
+        - react-haptics
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What are you trying to do, and what's blocking you?
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you tried?
+      description: Approaches you've already attempted. Skip if this is a first-look question.
+    validations:
+      required: false
+
+  - type: input
+    id: env
+    attributes:
+      label: Environment (optional)
+      placeholder: "iOS 17.5, React 19, @haptics/react 1.0.1"
+    validations:
+      required: false

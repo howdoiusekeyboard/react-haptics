@@ -1,0 +1,67 @@
+version: 2
+updates:
+  # npm dependencies across the monorepo
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      build-tooling:
+        patterns:
+          - "tsup"
+          - "turbo"
+          - "typescript"
+          - "@types/*"
+        update-types:
+          - "minor"
+          - "patch"
+      test-tooling:
+        patterns:
+          - "vitest"
+          - "jsdom"
+          - "@vue/test-utils"
+          - "@testing-library/*"
+        update-types:
+          - "minor"
+          - "patch"
+      framework-peers:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "vue"
+          - "svelte"
+        update-types:
+          - "minor"
+          - "patch"
+    # Don't auto-PR major bumps — flag them via alerts only so they get human review.
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+
+  # GitHub Actions used in .github/workflows/
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Etc/UTC"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(actions)"
+    groups:
+      actions:
+        patterns:
+          - "*"

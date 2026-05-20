@@ -1,0 +1,31 @@
+title: "[Idea] "
+labels: ["idea"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use Ideas to explore a feature or API direction before opening a formal Feature Request issue.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What can't you do today, or what feels awkward about the current API?
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: Idea
+      description: What would solve this? Loose sketches welcome — this is a discussion, not a spec.
+    validations:
+      required: true
+
+  - type: textarea
+    id: prior-art
+    attributes:
+      label: Prior art (optional)
+      description: Have you seen this solved well (or badly) elsewhere? Link to it.
+    validations:
+      required: false
